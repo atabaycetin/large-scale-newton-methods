@@ -1,0 +1,142 @@
+clc; clear; close all;
+
+SEED = 348306; % we gotta put our actual min matricola here
+n = [2 1e3 1e4 1e5];
+
+rng(SEED);
+
+%% We implemented a switch in the code to handle three cases:
+%    Mode,    Gradient,         Hessian,        Step Size (h)
+% 1. Exact,   Exact Formula,    Exact Formula,  N/A
+% 2. Mixed,   Exact Formula,    FD Approx,      "10−4,10−8,10−12"
+% 3. Full FD, FD Approx,        FD Approx,      "10−4,10−8,10−12"
+
+% We implemented almost everything as a modular structure for ease of use
+% and clarity. We hope that you like it:)
+
+%% Define function handles and modes
+f_handle = @(x) get_f(x);
+g_handle = @(x) get_g(x);
+h_handle = @(x) get_h(x);
+
+% % generalized broyden tridiagonal function
+% function y = get_f(x)
+%     y = broyd_tridia(x);
+% end
+% function y = get_g(x)
+%     [~, y] = broyd_tridia(x);
+% end
+% function y = get_h(x)
+%     [~, ~, y] = broyd_tridia(x);
+% end
+% % generalized broyden tridiagonal function exact hessian-vector product
+% hvp_handle = @(x, v) broyd_tridia_hesvp(x, v);
+
+% penalty 1 function
+function y = get_f(x)
+    y = penalty_1(x);
+end
+function y = get_g(x)
+    [~, y] = penalty_1(x);
+end
+function y = get_h(x)
+    [~, ~, y] = penalty_1(x);
+end
+
+% penalty 1 function exact hessian-vector product
+hvp_handle = @(x, v) penalty_1_hesvp(x, v);
+
+%% set hyperparameters (you can read their descriptions in function files)
+% max iteration
+kmax_m = 1000;
+kmax_tn = 1000;
+
+% gradient tolerance
+tolgrad_m = 1e-6;
+tolgrad_tn = 1e-4;
+
+% line search & armijo parameters
+c1_m = 1e-4;
+c1_tn = 1e-4;
+rho_m = 0.5;
+rho_tn = 0.5;
+btmax_m = 50;
+btmax_tn = 50;
+
+% diagonal shift parameters (modified newton)
+diag_shift = 1e-6;
+dsmax = 50;
+
+% conjugate gradient parameter (truncated newton)
+cgmax = 100;
+
+for dim = n
+    %% Testing with standard starting point X
+    
+    % % generalized broyden tridiagonal function standard starting point
+    % x_start_standard = -1 * ones(dim, 1);
+    
+    % penalty function 1 standard starting point
+    x_start_standard = 1 * ones(dim, 1); % we chose l = 1
+
+    fprintf('\n%s\n', repmat('-', 1, 60));
+    fprintf('RUNNING FOR n = %d\n', dim);
+    
+    fprintf('%s\n', repmat('-', 1, 60));
+
+    fprintf('\n--- Method 1: Modified Newton (Cholesky) ---\n');
+
+    t_start = tic; % calculate execution time
+    [xk, fk, gradfk_norm, k, xseq, btseq, success] = ...
+            newton_modified(x_start_standard, f_handle, g_handle, h_handle, ...
+                            kmax_m, tolgrad_m, c1_m, rho_m, btmax_m, diag_shift, dsmax);
+    elapsed_time = toc(t_start);
+
+    % Print results of Modified Newton Method
+    parse_output(0, k, xk, fk, gradfk_norm, xseq, btseq, 0, success, elapsed_time, 'modified_newton');
+
+    
+    fprintf('\n--- Method 2: Truncated Newton (CG) ---\n');
+    
+    t_start = tic; % calculate execution time
+    [xk, fk, gradfk_norm, k, xseq, btseq, cg_iters, success] = ...
+            newton_truncated(x_start_standard, f_handle, g_handle, hvp_handle, ...
+                             kmax_tn, tolgrad_tn, c1_tn, rho_tn, btmax_tn, cgmax);
+    elapsed_time = toc(t_start);
+    
+    % Print results of Truncated Newton Method
+    parse_output(0, k, xk, fk, gradfk_norm, xseq, btseq, cg_iters, success, elapsed_time, 'truncated_newton');
+    
+    fprintf('%s\n', repmat('-', 1, 60));
+    
+    %% Testing with random starting point X
+    for i = 1:5
+        % initialize random point
+        rand_point = x_start_standard(:) + 2 * rand(dim, 1) - 1;
+
+        fprintf('\n--- Method 1: Modified Newton (Cholesky) ---\n');
+
+        t_start = tic; % calculate execution time
+        [xk, fk, gradfk_norm, k, xseq, btseq, success] = ...
+                newton_modified(rand_point, f_handle, g_handle, h_handle, ...
+                                kmax_m, tolgrad_m, c1_m, rho_m, btmax_m, diag_shift, dsmax);
+        elapsed_time = toc(t_start);
+
+        % Print results of Modified Newton Method
+        parse_output(i, k, xk, fk, gradfk_norm, xseq, btseq, 0, success, elapsed_time, 'modified_newton');
+
+
+        fprintf('\n--- Method 2: Truncated Newton (CG) ---\n');
+        
+        t_start = tic; % calculate execution time
+        [xk, fk, gradfk_norm, k, xseq, btseq, cg_iters, success] = ...
+                newton_truncated(rand_point, f_handle, g_handle, hvp_handle, ...
+                                 kmax_tn, tolgrad_tn, c1_tn, rho_tn, btmax_tn, cgmax);
+        elapsed_time = toc(t_start);
+        
+        % Print results of Truncated Newton Method
+        parse_output(i, k, xk, fk, gradfk_norm, xseq, btseq, cg_iters, success, elapsed_time, 'truncated_newton');
+
+        fprintf('\n%s\n', repmat('-', 1, 60));
+    end
+end
