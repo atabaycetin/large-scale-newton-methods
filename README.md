@@ -97,7 +97,106 @@ The project is organized around three wrapper scripts corresponding to three der
 
 ## How to run
 
-Open MATLAB in the repo folder and run one of:
+Open MATLAB in the repository folder and run one of:
 
 ```matlab
 main_exact
+main_hessian_fd
+main_full_fd
+```
+
+Each script runs experiments for multiple dimensions (default):
+
+```matlab
+n = [2 1e3 1e4 1e5];
+```
+
+For each `n`, it evaluates:
+
+- A standard starting point  
+  ```matlab
+  x0 = ones(n,1);   % for penalty_1
+  ```
+
+- 5 random perturbations around the standard starting point
+
+---
+
+## Notes on scalability
+
+For very large `n`, explicitly forming and storing an `n × n` Hessian is infeasible.
+
+This repository supports large-scale runs via:
+
+- **Hessian-vector products** (Truncated Newton)
+
+- **Structured Hessian representation for `penalty_1`:**
+
+  ```matlab
+  H = d*I + sigma*(u*u');   % rank-1 update
+  ```
+
+  handled inside `newton_modified.m` using a Sherman–Morrison-style solve after ensuring positive definiteness.
+
+---
+
+## Parameters
+
+Both methods use Armijo backtracking with:
+
+- `c1` (Armijo parameter)
+- `rho` (step reduction)
+- `btmax` (maximum backtracking steps)
+
+### Modified Newton also uses:
+
+- `diag_shift`
+- `dsmax`  
+  (for the diagonal shifting loop)
+
+### Truncated Newton uses:
+
+- `cgmax` (maximum inner CG iterations)
+
+- A forcing term:
+  ```matlab
+  eta_k = min(0.5, sqrt(norm(g_k)));
+  ```
+  used for truncation.
+
+The exact values are defined inside each `main_*.m` wrapper.
+
+---
+
+## Expected outputs
+
+For each run, `parse_output.m` prints:
+
+- Initial point type (standard or random)
+- First/last components of `x_k`
+- Convergence status and iterations
+- Empirical convergence rate estimate
+- Final `f(x_k)` and `||g(x_k)||`
+- Total backtracking steps
+- Average CG iterations per outer step (TN only)
+- Execution time
+
+---
+
+## Switching test functions
+
+Both `main_exact.m` and `main_hessian_fd.m` include commented code blocks to switch to the generalized Broyden tridiagonal function.
+
+To switch:
+
+1. Uncomment the `broyd_tridia` blocks  
+2. Comment out the `penalty_1` blocks  
+3. Update the starting point accordingly (currently present in comments)
+
+---
+
+## Author
+
+Taha Atabay Çetin  
+MSc Data Science & Engineering — Politecnico di Torino
+
