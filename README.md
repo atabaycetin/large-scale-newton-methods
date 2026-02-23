@@ -1,4 +1,4 @@
-# Derivative-Based Optimization (MATLAB)
+# Derivative-Based Optimization
 Newton-type methods for large-scale nonlinear optimization with exact derivatives, finite-difference approximations, and Hessian-vector products.
 
 This repository implements and benchmarks:
@@ -199,4 +199,5 @@ To switch:
 
 Taha Atabay Çetin  
 MSc Data Science & Engineering — Politecnico di Torino
+
 
