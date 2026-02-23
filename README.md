@@ -10,8 +10,6 @@ The experiments are run on a test function (default: `penalty_1`) across multipl
 
 ---
 
-## What’s inside
-
 ### Core optimization methods
 - `newton_modified.m`  
   Modified Newton with diagonal shift to enforce positive definiteness.  
@@ -199,5 +197,6 @@ To switch:
 
 Taha Atabay Çetin  
 MSc Data Science & Engineering — Politecnico di Torino
+
 
 
