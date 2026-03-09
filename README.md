@@ -195,8 +195,8 @@ To switch:
 
 ## Author
 
-Taha Atabay Çetin  
-MSc Data Science & Engineering — Politecnico di Torino
+Taha Atabay Çetin
+MSc Data Science & Engineering | Politecnico di Torino
 
-
-
+Özgür Alkın Karaçam
+MSc Mathematical Engineering | Politecnico di Torino
